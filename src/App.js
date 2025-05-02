@@ -3,6 +3,16 @@ import "./App.css";
 import { database } from "./firebase";
 import { ref, onValue, update, get, set } from "firebase/database";
 
+// Shuffle array function using Fisher-Yates algorithm
+const shuffleArray = (array) => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
 function App() {
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -10,6 +20,8 @@ function App() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [gameOver, setGameOver] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
 
   // Fetch questions from Firebase
   useEffect(() => {
@@ -18,12 +30,12 @@ function App() {
     const unsubscribe = onValue(questionsRef, (snapshot) => {
       if (snapshot.exists()) {
         const questionsData = snapshot.val();
-        // Convert Firebase object to array
+        // Convert Firebase object to array and shuffle
         const questionsArray = Object.keys(questionsData).map((key) => ({
           id: key,
           ...questionsData[key],
         }));
-        setQuestions(questionsArray);
+        setQuestions(shuffleArray(questionsArray));
         setLoading(false);
       } else {
         // If no questions in database, initialize with default questions
@@ -67,7 +79,7 @@ function App() {
           }, {})
         );
 
-        setQuestions(defaultQuestions);
+        setQuestions(shuffleArray(defaultQuestions));
         setLoading(false);
       }
     });
@@ -87,17 +99,6 @@ function App() {
 
     return () => unsubscribe();
   }, []);
-
-  // Check if user has voted on this question before
-  useEffect(() => {
-    if (questions.length > 0) {
-      const currentQuestion = questions[currentQuestionIndex];
-      const votedQuestions = JSON.parse(
-        localStorage.getItem("votedQuestions") || "[]"
-      );
-      setHasVoted(votedQuestions.includes(currentQuestion.id));
-    }
-  }, [currentQuestionIndex, questions]);
 
   const handleVote = (option) => {
     if (hasVoted || questions.length === 0) return;
@@ -119,20 +120,50 @@ function App() {
         [option]: (currentVotes[option] || 0) + 1,
       });
 
-      // Mark this question as voted in localStorage
-      const votedQuestions = JSON.parse(
-        localStorage.getItem("votedQuestions") || "[]"
-      );
-      votedQuestions.push(currentQuestion.id);
-      localStorage.setItem("votedQuestions", JSON.stringify(votedQuestions));
-
       setHasVoted(true);
+
+      // Create random particles animation effect
+      const particles = document.querySelectorAll(".particle");
+      particles.forEach((particle) => {
+        // Random position
+        const x = (Math.random() - 0.5) * 600;
+        const y = (Math.random() - 0.5) * 600;
+        particle.style.setProperty("--x", `${x}px`);
+        particle.style.setProperty("--y", `${y}px`);
+      });
+
+      // Automatically go to next question after a delay
+      setTimeout(() => {
+        if (currentQuestionIndex < questions.length - 1) {
+          setFadeOut(true);
+          setTimeout(() => {
+            setSelectedOption(null);
+            setHasVoted(false);
+            setCurrentQuestionIndex((prev) => prev + 1);
+            setFadeOut(false);
+          }, 500); // Matches the CSS transition time
+        } else {
+          // If this was the last question, show game over screen
+          setFadeOut(true);
+          setTimeout(() => {
+            setGameOver(true);
+            setFadeOut(false);
+          }, 500);
+        }
+      }, 3000); // Show results for 3 seconds before moving on
     });
   };
 
-  const nextQuestion = () => {
-    setSelectedOption(null);
-    setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
+  const handleReplay = () => {
+    setFadeOut(true);
+    setTimeout(() => {
+      setQuestions(shuffleArray(questions));
+      setCurrentQuestionIndex(0);
+      setSelectedOption(null);
+      setHasVoted(false);
+      setGameOver(false);
+      setFadeOut(false);
+    }, 500);
   };
 
   // Calculate percentages for the results
@@ -156,7 +187,10 @@ function App() {
   if (loading)
     return (
       <div className="App">
-        <div className="loading">Loading questions...</div>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <div className="loading-text">Loading questions...</div>
+        </div>
       </div>
     );
 
@@ -170,43 +204,76 @@ function App() {
     );
   }
 
+  if (gameOver) {
+    return (
+      <div className={`App ${fadeOut ? "fade-out" : "fade-in"}`}>
+        <div className="background-animation">
+          <div className="blob blob1"></div>
+          <div className="blob blob2"></div>
+          <div className="blob blob3"></div>
+        </div>
+
+        <div className="game-over-container">
+          <div className="confetti-container"></div>
+          <div className="trophy-icon">
+            <i className="fas fa-trophy"></i>
+          </div>
+          <h1>Game Complete!</h1>
+          <p>You've answered all the questions.</p>
+          <p className="stats-text">How did your choices compare to others?</p>
+          <button className="replay-button" onClick={handleReplay}>
+            <i className="fas fa-redo-alt"></i> Play Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <div className="App">
+    <div className={`App ${fadeOut ? "fade-out" : "fade-in"}`}>
+      <div className="background-animation">
+        <div className="blob blob1"></div>
+        <div className="blob blob2"></div>
+        <div className="blob blob3"></div>
+      </div>
+
       <header className="App-header">
         <h1>Would You Rather?</h1>
       </header>
 
       <div className="question-container">
-        <h2>
-          Question {currentQuestionIndex + 1} of {questions.length}
-        </h2>
+        <div className="question-number">
+          <span>{currentQuestionIndex + 1}</span> / {questions.length}
+        </div>
 
-        <div className="options">
+        <div className="options-container">
           <div
             className={`option ${
               selectedOption === "optionA" ? "selected" : ""
             } ${hasVoted ? "voted" : ""}`}
             onClick={() => !hasVoted && handleVote("optionA")}
           >
-            <p>{currentQuestion.optionA}</p>
+            <div className="option-content">
+              <div className="option-text">{currentQuestion.optionA}</div>
 
-            {hasVoted && (
-              <div className="results">
-                <div
-                  className="progress-bar"
-                  style={{ width: `${calculatePercentage("optionA")}%` }}
-                ></div>
-                <span>{calculatePercentage("optionA")}%</span>
-                <span className="vote-count">
-                  {results[currentQuestion.id]?.optionA || 0} votes
-                </span>
-              </div>
-            )}
+              {hasVoted && (
+                <div className="results-container">
+                  <div className="percentage-display">
+                    <i className="fas fa-chart-pie percentage-icon"></i>
+                    <div className="percentage-value">
+                      {calculatePercentage("optionA")}%
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="or">OR</div>
+          <div className="versus-container">
+            <div className="versus">VS</div>
+          </div>
 
           <div
             className={`option ${
@@ -214,29 +281,31 @@ function App() {
             } ${hasVoted ? "voted" : ""}`}
             onClick={() => !hasVoted && handleVote("optionB")}
           >
-            <p>{currentQuestion.optionB}</p>
+            <div className="option-content">
+              <div className="option-text">{currentQuestion.optionB}</div>
 
-            {hasVoted && (
-              <div className="results">
-                <div
-                  className="progress-bar"
-                  style={{ width: `${calculatePercentage("optionB")}%` }}
-                ></div>
-                <span>{calculatePercentage("optionB")}%</span>
-                <span className="vote-count">
-                  {results[currentQuestion.id]?.optionB || 0} votes
-                </span>
-              </div>
-            )}
+              {hasVoted && (
+                <div className="results-container">
+                  <div className="percentage-display">
+                    <i className="fas fa-chart-pie percentage-icon"></i>
+                    <div className="percentage-value">
+                      {calculatePercentage("optionB")}%
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {hasVoted && (
-          <button className="next-button" onClick={nextQuestion}>
-            Next Question
-          </button>
-        )}
       </div>
+
+      {hasVoted && (
+        <div className="particles-container">
+          {[...Array(20)].map((_, i) => (
+            <div key={i} className="particle"></div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
