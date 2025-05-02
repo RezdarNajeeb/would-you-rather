@@ -5,6 +5,8 @@ import { getDatabase } from "firebase/database";
 const firebaseConfig = {
   apiKey: "AIzaSyAi56vVxMQrMGbTkIpddp54AzEEEDpp8TQ",
   authDomain: "would-you-rather-99e71.firebaseapp.com",
+  databaseURL:
+    "https://would-you-rather-99e71-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "would-you-rather-99e71",
   storageBucket: "would-you-rather-99e71.firebasestorage.app",
   messagingSenderId: "737670658095",
