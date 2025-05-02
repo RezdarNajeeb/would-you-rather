@@ -33,33 +33,40 @@ function App() {
   useEffect(() => {
     const questionsRef = ref(database, "questions");
 
-    const unsubscribe = onValue(questionsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const questionsData = snapshot.val();
-        // Convert Firebase object to array and shuffle
-        const questionsArray = Object.keys(questionsData).map((key) => ({
-          id: key,
-          ...questionsData[key],
-        }));
-        setQuestions(shuffleArray(questionsArray));
-        setLoading(false);
-      } else {
-        // If no questions in database, initialize with default questions
-        set(
-          questionsRef,
-          defaultQuestions.reduce((acc, question) => {
-            acc[question.id] = {
-              en: question.en,
-              ku: question.ku,
-            };
-            return acc;
-          }, {})
-        );
+    const unsubscribe = onValue(
+      questionsRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const questionsData = snapshot.val();
+          // Convert Firebase object to array and shuffle
+          const questionsArray = Object.keys(questionsData).map((key) => ({
+            id: key,
+            ...questionsData[key],
+          }));
+          setQuestions(shuffleArray(questionsArray));
+          setLoading(false);
+        } else {
+          // If no questions in database, initialize with default questions
+          set(
+            questionsRef,
+            defaultQuestions.reduce((acc, question) => {
+              acc[question.id] = {
+                en: question.en,
+                ku: question.ku,
+              };
+              return acc;
+            }, {})
+          );
 
-        setQuestions(shuffleArray(defaultQuestions));
+          setQuestions(shuffleArray(defaultQuestions));
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error("Database error:", error);
         setLoading(false);
       }
-    });
+    );
 
     return () => unsubscribe();
   }, []);
@@ -68,67 +75,85 @@ function App() {
   useEffect(() => {
     const votesRef = ref(database, "votes");
 
-    const unsubscribe = onValue(votesRef, (snapshot) => {
-      if (snapshot.exists()) {
-        setResults(snapshot.val());
+    const unsubscribe = onValue(
+      votesRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setResults(snapshot.val());
+        }
+      },
+      (error) => {
+        console.error("Votes retrieval error:", error);
       }
-    });
+    );
 
     return () => unsubscribe();
   }, []);
 
   const handleVote = (option) => {
-    if (hasVoted || questions.length === 0) return;
+    if (
+      hasVoted ||
+      questions.length === 0 ||
+      currentQuestionIndex >= questions.length
+    )
+      return;
 
     const currentQuestion = questions[currentQuestionIndex];
+    if (!currentQuestion || !currentQuestion.id) return;
+
     setSelectedOption(option);
 
     const questionRef = ref(database, `votes/${currentQuestion.id}`);
 
     // Get current votes and update them
-    get(questionRef).then((snapshot) => {
-      const currentVotes = snapshot.exists()
-        ? snapshot.val()
-        : { optionA: 0, optionB: 0 };
+    get(questionRef)
+      .then((snapshot) => {
+        const currentVotes = snapshot.exists()
+          ? snapshot.val()
+          : { optionA: 0, optionB: 0 };
 
-      // Update the database
-      update(questionRef, {
-        ...currentVotes,
-        [option]: (currentVotes[option] || 0) + 1,
+        // Update the database
+        update(questionRef, {
+          ...currentVotes,
+          [option]: (currentVotes[option] || 0) + 1,
+        });
+
+        setHasVoted(true);
+
+        // Create random particles animation effect
+        const particles = document.querySelectorAll(".particle");
+        particles.forEach((particle) => {
+          // Random position
+          const x = (Math.random() - 0.5) * 600;
+          const y = (Math.random() - 0.5) * 600;
+          particle.style.setProperty("--x", `${x}px`);
+          particle.style.setProperty("--y", `${y}px`);
+        });
+
+        // Automatically go to next question after a delay
+        setTimeout(() => {
+          if (currentQuestionIndex < questions.length - 1) {
+            setFadeOut(true);
+            setTimeout(() => {
+              setSelectedOption(null);
+              setHasVoted(false);
+              setCurrentQuestionIndex((prev) => prev + 1);
+              setFadeOut(false);
+            }, 500); // Matches the CSS transition time
+          } else {
+            // If this was the last question, show game over screen
+            setFadeOut(true);
+            setTimeout(() => {
+              setGameOver(true);
+              setFadeOut(false);
+            }, 500);
+          }
+        }, 3000); // Show results for 3 seconds before moving on
+      })
+      .catch((error) => {
+        console.error("Error updating vote:", error);
+        setHasVoted(false);
       });
-
-      setHasVoted(true);
-
-      // Create random particles animation effect
-      const particles = document.querySelectorAll(".particle");
-      particles.forEach((particle) => {
-        // Random position
-        const x = (Math.random() - 0.5) * 600;
-        const y = (Math.random() - 0.5) * 600;
-        particle.style.setProperty("--x", `${x}px`);
-        particle.style.setProperty("--y", `${y}px`);
-      });
-
-      // Automatically go to next question after a delay
-      setTimeout(() => {
-        if (currentQuestionIndex < questions.length - 1) {
-          setFadeOut(true);
-          setTimeout(() => {
-            setSelectedOption(null);
-            setHasVoted(false);
-            setCurrentQuestionIndex((prev) => prev + 1);
-            setFadeOut(false);
-          }, 500); // Matches the CSS transition time
-        } else {
-          // If this was the last question, show game over screen
-          setFadeOut(true);
-          setTimeout(() => {
-            setGameOver(true);
-            setFadeOut(false);
-          }, 500);
-        }
-      }, 3000); // Show results for 3 seconds before moving on
-    });
   };
 
   const handleReplay = () => {
@@ -145,10 +170,16 @@ function App() {
 
   // Calculate percentages for the results
   const calculatePercentage = (option) => {
-    if (!results || !questions.length) return 0;
+    if (
+      !results ||
+      !questions.length ||
+      currentQuestionIndex >= questions.length
+    )
+      return 0;
 
     const currentQuestion = questions[currentQuestionIndex];
-    if (!results[currentQuestion.id]) return 0;
+    if (!currentQuestion || !currentQuestion.id || !results[currentQuestion.id])
+      return 0;
 
     const optionAVotes = results[currentQuestion.id].optionA || 0;
     const optionBVotes = results[currentQuestion.id].optionB || 0;
@@ -163,12 +194,18 @@ function App() {
 
   // Get current question options based on selected language
   const getCurrentQuestionOptions = () => {
-    if (!questions.length) return { optionA: "", optionB: "" };
+    if (!questions.length || currentQuestionIndex >= questions.length)
+      return { optionA: "", optionB: "" };
 
     const currentQuestion = questions[currentQuestionIndex];
     const langKey = language === LANGUAGES.KURDISH ? "ku" : "en";
 
-    return currentQuestion[langKey] || currentQuestion.en; // Fallback to English
+    // Check if the language-specific options exist, if not fall back to English
+    return currentQuestion[langKey] &&
+      currentQuestion[langKey].optionA !== undefined &&
+      currentQuestion[langKey].optionB !== undefined
+      ? currentQuestion[langKey]
+      : currentQuestion.en || { optionA: "", optionB: "" };
   };
 
   if (loading)
@@ -245,7 +282,7 @@ function App() {
             onClick={() => !hasVoted && handleVote("optionA")}
           >
             <div className="option-content">
-              <div className="option-text">{questionOptions.optionA}</div>
+              <div className="option-text">{questionOptions.optionA || ""}</div>
 
               {hasVoted && (
                 <div className="results-container">
@@ -271,7 +308,7 @@ function App() {
             onClick={() => !hasVoted && handleVote("optionB")}
           >
             <div className="option-content">
-              <div className="option-text">{questionOptions.optionB}</div>
+              <div className="option-text">{questionOptions.optionB || ""}</div>
 
               {hasVoted && (
                 <div className="results-container">
