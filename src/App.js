@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import "./App.css";
-import { database } from "./firebase";
+import { database, defaultQuestions } from "./firebase";
 import { ref, onValue, update, get, set } from "firebase/database";
+import BurgerMenu from "./components/BurgerMenu";
+import { ThemeContext } from "./contexts/ThemeContext";
+import { LanguageContext, LANGUAGES } from "./contexts/LanguageContext";
 
 // Shuffle array function using Fisher-Yates algorithm
 const shuffleArray = (array) => {
@@ -14,6 +17,9 @@ const shuffleArray = (array) => {
 };
 
 function App() {
+  const { theme } = useContext(ThemeContext);
+  const { language, t } = useContext(LanguageContext);
+
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [results, setResults] = useState({});
@@ -39,41 +45,12 @@ function App() {
         setLoading(false);
       } else {
         // If no questions in database, initialize with default questions
-        const defaultQuestions = [
-          {
-            id: "1",
-            optionA: "Be able to fly",
-            optionB: "Be invisible",
-          },
-          {
-            id: "2",
-            optionA: "Live without internet for a year",
-            optionB: "Live without AC/heating for a year",
-          },
-          {
-            id: "3",
-            optionA: "Be 10 years older",
-            optionB: "Be 10 years younger",
-          },
-          {
-            id: "4",
-            optionA: "Always have to tell the truth",
-            optionB: "Always have to lie",
-          },
-          {
-            id: "5",
-            optionA: "Be fluent in all languages",
-            optionB: "Be a master of all musical instruments",
-          },
-        ];
-
-        // Initialize the database with default questions
         set(
           questionsRef,
           defaultQuestions.reduce((acc, question) => {
             acc[question.id] = {
-              optionA: question.optionA,
-              optionB: question.optionB,
+              en: question.en,
+              ku: question.ku,
             };
             return acc;
           }, {})
@@ -184,12 +161,22 @@ function App() {
     );
   };
 
+  // Get current question options based on selected language
+  const getCurrentQuestionOptions = () => {
+    if (!questions.length) return { optionA: "", optionB: "" };
+
+    const currentQuestion = questions[currentQuestionIndex];
+    const langKey = language === LANGUAGES.KURDISH ? "ku" : "en";
+
+    return currentQuestion[langKey] || currentQuestion.en; // Fallback to English
+  };
+
   if (loading)
     return (
       <div className="App">
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <div className="loading-text">Loading questions...</div>
+          <div className="loading-text">{t("loading")}</div>
         </div>
       </div>
     );
@@ -197,9 +184,7 @@ function App() {
   if (questions.length === 0) {
     return (
       <div className="App">
-        <div className="error">
-          No questions available. Please check your database.
-        </div>
+        <div className="error">{t("noQuestions")}</div>
       </div>
     );
   }
@@ -207,6 +192,8 @@ function App() {
   if (gameOver) {
     return (
       <div className={`App ${fadeOut ? "fade-out" : "fade-in"}`}>
+        <BurgerMenu />
+
         <div className="background-animation">
           <div className="blob blob1"></div>
           <div className="blob blob2"></div>
@@ -218,21 +205,23 @@ function App() {
           <div className="trophy-icon">
             <i className="fas fa-trophy"></i>
           </div>
-          <h1>Game Complete!</h1>
-          <p>You've answered all the questions.</p>
-          <p className="stats-text">How did your choices compare to others?</p>
+          <h1>{t("gameComplete")}</h1>
+          <p>{t("answeredAll")}</p>
+          <p className="stats-text">{t("statsText")}</p>
           <button className="replay-button" onClick={handleReplay}>
-            <i className="fas fa-redo-alt"></i> Play Again
+            <i className="fas fa-redo-alt"></i> {t("playAgain")}
           </button>
         </div>
       </div>
     );
   }
 
-  const currentQuestion = questions[currentQuestionIndex];
+  const questionOptions = getCurrentQuestionOptions();
 
   return (
     <div className={`App ${fadeOut ? "fade-out" : "fade-in"}`}>
+      <BurgerMenu />
+
       <div className="background-animation">
         <div className="blob blob1"></div>
         <div className="blob blob2"></div>
@@ -240,12 +229,12 @@ function App() {
       </div>
 
       <header className="App-header">
-        <h1>Would You Rather?</h1>
+        <h1>{t("appTitle")}</h1>
       </header>
 
       <div className="question-container">
         <div className="question-number">
-          <span>{currentQuestionIndex + 1}</span> / {questions.length}
+          <span>{currentQuestionIndex + 1}</span> {t("of")} {questions.length}
         </div>
 
         <div className="options-container">
@@ -256,7 +245,7 @@ function App() {
             onClick={() => !hasVoted && handleVote("optionA")}
           >
             <div className="option-content">
-              <div className="option-text">{currentQuestion.optionA}</div>
+              <div className="option-text">{questionOptions.optionA}</div>
 
               {hasVoted && (
                 <div className="results-container">
@@ -272,7 +261,7 @@ function App() {
           </div>
 
           <div className="versus-container">
-            <div className="versus">VS</div>
+            <div className="versus">{t("versus")}</div>
           </div>
 
           <div
@@ -282,7 +271,7 @@ function App() {
             onClick={() => !hasVoted && handleVote("optionB")}
           >
             <div className="option-content">
-              <div className="option-text">{currentQuestion.optionB}</div>
+              <div className="option-text">{questionOptions.optionB}</div>
 
               {hasVoted && (
                 <div className="results-container">

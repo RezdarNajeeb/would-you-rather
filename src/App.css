@@ -1,15 +1,23 @@
 /* Import Poppins font */
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap");
+/* Import Noto Sans Arabic for better Kurdish rendering */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap");
 
 :root {
-  --primary-color: #8b5cf6;
-  --secondary-color: #ec4899;
-  --accent-color: #06b6d4;
+  /* Default theme variables will be overridden by ThemeContext */
+  --primary: #8b5cf6;
+  --secondary: #ec4899;
+  --accent: #06b6d4;
   --background: #f9fafb;
-  --card-bg: #ffffff;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
+  --cardBg: #ffffff;
+  --textPrimary: #1f2937;
+  --textSecondary: #6b7280;
   --animation-duration: 0.6s;
+}
+
+/* RTL support for Kurdish */
+[dir="rtl"] {
+  font-family: "Noto Sans Arabic", "Poppins", sans-serif;
 }
 
 body,
@@ -20,6 +28,7 @@ html {
   background-color: var(--background);
   font-family: "Poppins", sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.3s ease;
 }
 
 .App {
@@ -55,11 +64,7 @@ html {
 .blob1 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(
-    45deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
   top: -100px;
   right: -100px;
   animation-delay: 0s;
@@ -68,7 +73,7 @@ html {
 .blob2 {
   width: 350px;
   height: 350px;
-  background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
+  background: linear-gradient(45deg, var(--accent), var(--primary));
   bottom: -100px;
   left: -100px;
   animation-delay: -5s;
@@ -77,11 +82,7 @@ html {
 .blob3 {
   width: 250px;
   height: 250px;
-  background: linear-gradient(
-    45deg,
-    var(--secondary-color),
-    var(--accent-color)
-  );
+  background: linear-gradient(45deg, var(--secondary), var(--accent));
   bottom: 200px;
   right: 200px;
   animation-delay: -10s;
@@ -105,11 +106,7 @@ html {
 .App-header h1 {
   font-size: min(4rem, 15vw);
   font-weight: 800;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -120,10 +117,14 @@ html {
   animation: pulse 8s infinite;
 }
 
+[dir="rtl"] .App-header h1 {
+  letter-spacing: normal;
+}
+
 .question-container {
   width: 100%;
   max-width: 1000px;
-  background-color: var(--card-bg);
+  background-color: var(--cardBg);
   border-radius: 24px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03), 0 20px 48px rgba(0, 0, 0, 0.06),
     0 1px 4px rgba(0, 0, 0, 0.1);
@@ -131,7 +132,8 @@ html {
   padding: 20px;
   position: relative;
   z-index: 2;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease,
+    background-color 0.3s ease;
 }
 
 .question-container:hover {
@@ -143,14 +145,14 @@ html {
 .question-number {
   text-align: center;
   font-size: 1.1rem;
-  color: var(--text-secondary);
+  color: var(--textSecondary);
   margin-bottom: 20px;
   font-weight: 500;
 }
 
 .question-number span {
   font-weight: 700;
-  color: var(--primary-color);
+  color: var(--primary);
   font-size: 1.3rem;
 }
 
@@ -163,7 +165,7 @@ html {
 }
 
 .option {
-  background-color: var(--card-bg);
+  background-color: var(--cardBg);
   border: 2px solid rgba(139, 92, 246, 0.1);
   border-radius: 20px;
   padding: 30px;
@@ -186,11 +188,7 @@ html {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   opacity: 0;
   transition: opacity 0.3s ease;
   border-radius: 18px;
@@ -209,7 +207,7 @@ html {
 }
 
 .option.selected {
-  border-color: var(--primary-color);
+  border-color: var(--primary);
   background-color: rgba(139, 92, 246, 0.05);
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 14px 30px rgba(139, 92, 246, 0.15);
@@ -235,7 +233,7 @@ html {
 .option-text {
   font-size: 1.8rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--textPrimary);
   transition: transform 0.3s ease;
   flex-grow: 1;
   text-align: center;
@@ -265,11 +263,7 @@ html {
 .percentage-value {
   font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -278,7 +272,7 @@ html {
 .percentage-icon {
   font-size: 1.5rem;
   margin-bottom: 5px;
-  color: var(--primary-color);
+  color: var(--primary);
 }
 
 .versus-container {
@@ -293,11 +287,7 @@ html {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: white;
   display: flex;
   align-items: center;
@@ -323,11 +313,7 @@ html {
   position: absolute;
   width: 8px;
   height: 8px;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   border-radius: 50%;
   opacity: 0;
   animation: particles 1s ease-out forwards;
@@ -337,7 +323,7 @@ html {
 .game-over-container {
   width: 100%;
   max-width: 800px;
-  background-color: var(--card-bg);
+  background-color: var(--cardBg);
   border-radius: 24px;
   padding: 60px 40px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 10px 20px rgba(0, 0, 0, 0.05);
@@ -345,6 +331,7 @@ html {
   animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
   position: relative;
   overflow: hidden;
+  transition: background-color 0.3s ease;
 }
 
 .game-over-container::before {
@@ -364,11 +351,7 @@ html {
 
 .game-over-container h1 {
   font-size: 3.5rem;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -379,18 +362,14 @@ html {
 
 .game-over-container p {
   font-size: 1.4rem;
-  color: var(--text-secondary);
+  color: var(--textSecondary);
   margin-bottom: 40px;
   position: relative;
   z-index: 1;
 }
 
 .replay-button {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--secondary-color)
-  );
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
   color: white;
   border: none;
   border-radius: 16px;
@@ -428,7 +407,7 @@ html {
   width: 60px;
   height: 60px;
   border: 5px solid rgba(139, 92, 246, 0.1);
-  border-top: 5px solid var(--primary-color);
+  border-top: 5px solid var(--primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 20px;
@@ -436,8 +415,46 @@ html {
 
 .loading-text {
   font-size: 1.2rem;
-  color: var(--text-secondary);
+  color: var(--textSecondary);
   font-weight: 500;
+}
+
+/* Dark Theme Specific Styles */
+[data-theme="dark"] .option {
+  border-color: rgba(167, 139, 250, 0.2);
+}
+
+[data-theme="dark"] .option:hover:not(.voted) {
+  border-color: rgba(167, 139, 250, 0.4);
+  box-shadow: 0 14px 30px rgba(167, 139, 250, 0.1),
+    0 4px 8px rgba(167, 139, 250, 0.08);
+}
+
+[data-theme="dark"] .loading-spinner {
+  border-color: rgba(167, 139, 250, 0.1);
+  border-top-color: var(--primary);
+}
+
+/* RTL Specific Adjustments */
+[dir="rtl"] .option-text {
+  font-family: "Noto Sans Arabic", sans-serif;
+  line-height: 1.5;
+}
+
+[dir="rtl"] .versus {
+  font-family: "Noto Sans Arabic", sans-serif;
+}
+
+[dir="rtl"] .replay-button {
+  font-family: "Noto Sans Arabic", sans-serif;
+}
+
+[dir="rtl"] .game-over-container h1 {
+  font-family: "Noto Sans Arabic", sans-serif;
+}
+
+[dir="rtl"] .question-number {
+  font-family: "Noto Sans Arabic", sans-serif;
 }
 
 /* Animations */
@@ -677,8 +694,6 @@ html {
   top: 50%;
 }
 
-/* Add these styles to your App.css */
-
 /* Confetti Animation */
 .confetti-container {
   position: absolute;
@@ -738,7 +753,7 @@ html {
 
 .stats-text {
   font-style: italic;
-  color: var(--text-secondary);
+  color: var(--textSecondary);
   margin-bottom: 30px;
 }
 
@@ -770,4 +785,16 @@ html {
     transform: scale(1.5);
     opacity: 0;
   }
+}
+
+/* Error message styling */
+.error {
+  background-color: var(--cardBg);
+  padding: 30px;
+  border-radius: 12px;
+  color: var(--textPrimary);
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  margin: 0 auto;
 }
